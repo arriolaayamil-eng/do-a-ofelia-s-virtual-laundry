@@ -57,33 +57,48 @@ function Home() {
 
   return (
     <div>
-      {/* Hero */}
-      <section className="border-b bg-muted/30">
-        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 md:grid-cols-2 md:items-center md:py-16">
-          <div>
-            <p className="text-sm uppercase tracking-wide text-muted-foreground">Ostende · Pinamar</p>
-            <h1 className="mt-2 text-3xl font-bold leading-tight md:text-5xl">
-              {business.name}
-            </h1>
-            <p className="mt-3 text-lg text-muted-foreground">{business.slogan}</p>
-            <p className="mt-4 max-w-md text-sm text-muted-foreground">
-              Lavandería familiar con más de 70 años de historia. Servicio de valet, acolchados, almohadas, manteles y cortinas. Productos propios de limpieza en bidón de 5 L.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Button asChild size="lg">
-                <Link to="/servicios">Pedir un servicio</Link>
-              </Button>
-              <Button asChild size="lg" variant="outline">
-                <Link to="/productos">Comprar productos</Link>
-              </Button>
-            </div>
+      {/* Hero a sangre completa con imagen de fondo.
+          PLACEHOLDER: gradiente de marca. Para usar la foto definitiva:
+          1) guardar la imagen en src/assets/brand/ (ej. hero-bg.jpg)
+          2) importarla arriba:  import heroBg from "@/assets/brand/hero-bg.jpg"
+          3) en el div de fondo, reemplazar el `background` del style por
+             `backgroundImage: \`url(\${heroBg})\``  (ya tiene bg-cover bg-center). */}
+      <section className="relative isolate flex min-h-[88vh] items-center overflow-hidden">
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-20 bg-cover bg-center"
+          style={{
+            background:
+              "radial-gradient(120% 120% at 72% 8%, #2a5bc0 0%, #0A2C7A 52%, #071F57 100%)",
+          }}
+        />
+        {/* Velo para legibilidad del texto blanco */}
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10 bg-gradient-to-t from-black/55 via-black/20 to-black/35"
+        />
+
+        <div className="mx-auto w-full max-w-6xl px-4 pb-20 pt-28 text-white md:pb-28 md:pt-32">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white/80">
+            Ostende · Pinamar
+          </p>
+          <h1 className="mt-3 max-w-3xl text-4xl font-bold leading-[1.05] drop-shadow-md md:text-6xl">
+            {business.name}
+          </h1>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link
+              to="/servicios"
+              className="inline-flex items-center justify-center rounded-lg bg-white px-6 py-3 text-base font-semibold text-primary shadow-lg transition hover:bg-white/90"
+            >
+              Pedir un servicio
+            </Link>
+            <Link
+              to="/productos"
+              className="inline-flex items-center justify-center rounded-lg border-2 border-white/80 px-6 py-3 text-base font-semibold text-white transition hover:bg-white/10"
+            >
+              Comprar productos
+            </Link>
           </div>
-          <ImgSlot
-            refId="#1 — Hero del lavadero (frente o interior)"
-            alt="Frente del Lavadero Doña Ofelia"
-            ratio="tall"
-            className="mx-auto w-full max-w-xs rounded-2xl shadow-xl ring-1 ring-black/5 md:max-w-sm"
-          />
         </div>
       </section>
 
