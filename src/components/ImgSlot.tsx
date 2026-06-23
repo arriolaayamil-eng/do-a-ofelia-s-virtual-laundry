@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { imgFor } from "@/lib/img-map";
 
 type Props = {
   refId: string; // e.g. "#1 — Hero del lavadero"
@@ -15,6 +16,20 @@ const ratios: Record<NonNullable<Props["ratio"]>, string> = {
 };
 
 export function ImgSlot({ refId, alt, className, ratio = "video" }: Props) {
+  const src = imgFor(refId);
+
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        data-img-ref={refId}
+        className={cn("h-full w-full object-cover", ratios[ratio], className)}
+      />
+    );
+  }
+
   return (
     <div
       data-img-ref={refId}

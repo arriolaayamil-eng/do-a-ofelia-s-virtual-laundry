@@ -78,7 +78,12 @@ function Home() {
               </Button>
             </div>
           </div>
-          <ImgSlot refId="#1 — Hero del lavadero (frente o interior)" alt="Frente del Lavadero Doña Ofelia" ratio="wide" />
+          <ImgSlot
+            refId="#1 — Hero del lavadero (frente o interior)"
+            alt="Frente del Lavadero Doña Ofelia"
+            ratio="tall"
+            className="mx-auto w-full max-w-xs rounded-2xl shadow-xl ring-1 ring-black/5 md:max-w-sm"
+          />
         </div>
       </section>
 
