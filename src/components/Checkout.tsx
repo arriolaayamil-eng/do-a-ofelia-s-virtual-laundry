@@ -35,11 +35,26 @@ const contactSchema = z.object({
 });
 type ContactValues = z.infer<typeof contactSchema>;
 
+// Modo demo (sin backend): precarga datos ficticios para agilizar la prueba de pago.
+// Cuando VITE_API_BASE_URL esté seteado (producción), los campos van vacíos.
+const DEMO_MODE = !(import.meta.env.VITE_API_BASE_URL ?? "").toString().trim();
+const DEFAULT_CONTACT: ContactValues = DEMO_MODE
+  ? {
+      name: "Juan Pérez",
+      phone: "2254 401234",
+      email: "juan.perez@example.com",
+      address: "Av. La Plata 828, Ostende",
+      date: "",
+      notes: "",
+    }
+  : { name: "", phone: "", email: "", address: "", date: "", notes: "" };
+
 export function Checkout({ kind }: { kind: Kind }) {
   const items = useCart(kind);
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [mode, setMode] = useState<Mode>(kind === "service" ? "retiro-entrega" : "retiro");
   const [success, setSuccess] = useState<{ code: string; waUrl: string } | null>(null);
+  const [paid, setPaid] = useState<{ code: string; paymentId: string } | null>(null);
   const [contact, setContact] = useState<ContactValues | null>(null);
   const [pref, setPref] = useState<OrderPreference | null>(null);
   const [prefLoading, setPrefLoading] = useState(false);
@@ -64,8 +79,38 @@ export function Checkout({ kind }: { kind: Kind }) {
 
   const form = useForm<ContactValues>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", phone: "", email: "", address: "", date: "", notes: "" },
+    defaultValues: DEFAULT_CONTACT,
   });
+
+  // En el paso 4 intentamos crear la orden + preferencia de MP en el backend.
+  // Sin backend (VITE_API_BASE_URL vacío) devuelve null y el Wallet muestra su placeholder.
+  // IMPORTANTE: debe ir ANTES de cualquier return temprano (regla de hooks de React).
+  useEffect(() => {
+    if (step !== 4 || !contact) return;
+    let active = true;
+    setPrefLoading(true);
+    createOrderPreference({
+      kind,
+      mode,
+      items: cart.get(kind).map((i) => ({ slug: i.slug, quantity: i.quantity })),
+      contact: {
+        name: contact.name,
+        phone: contact.phone,
+        email: contact.email,
+        address: contact.address || undefined,
+        notes: contact.notes || undefined,
+      },
+    })
+      .then((p) => active && setPref(p))
+      .finally(() => active && setPrefLoading(false));
+    return () => {
+      active = false;
+    };
+  }, [step, contact, kind, mode]);
+
+  if (paid) {
+    return <PaidPanel kind={kind} code={paid.code} paymentId={paid.paymentId} />;
+  }
 
   if (success) {
     return <SuccessPanel kind={kind} code={success.code} waUrl={success.waUrl} />;
@@ -96,30 +141,12 @@ export function Checkout({ kind }: { kind: Kind }) {
     setStep(4);
   }
 
-  // En el paso 4 intentamos crear la orden + preferencia de MP en el backend.
-  // Sin backend (VITE_API_BASE_URL vacío) devuelve null y el Wallet muestra su placeholder.
-  useEffect(() => {
-    if (step !== 4 || !contact) return;
-    let active = true;
-    setPrefLoading(true);
-    createOrderPreference({
-      kind,
-      mode,
-      items: cart.get(kind).map((i) => ({ slug: i.slug, quantity: i.quantity })),
-      contact: {
-        name: contact.name,
-        phone: contact.phone,
-        email: contact.email,
-        address: contact.address || undefined,
-        notes: contact.notes || undefined,
-      },
-    })
-      .then((p) => active && setPref(p))
-      .finally(() => active && setPrefLoading(false));
-    return () => {
-      active = false;
-    };
-  }, [step, contact, kind, mode]);
+  // Pago aprobado (simulado en demo; real vía webhook+polling cuando haya backend).
+  function handlePaid(paymentId: string) {
+    const code = nextCode(kind === "service" ? "SRV" : "PRD");
+    cart.clear(kind);
+    setPaid({ code, paymentId });
+  }
 
   // Alternativa / fallback: confirmar y coordinar por WhatsApp (sin pago online).
   function confirmViaWhatsApp() {
@@ -217,7 +244,11 @@ export function Checkout({ kind }: { kind: Kind }) {
 
           <div>
             <h3 className="mb-2 text-sm font-medium">Pagar online</h3>
-            <MercadoPagoWallet preferenceId={pref?.preferenceId ?? null} loading={prefLoading} />
+            <MercadoPagoWallet
+              preferenceId={pref?.preferenceId ?? null}
+              loading={prefLoading}
+              onApproved={handlePaid}
+            />
           </div>
 
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -418,6 +449,48 @@ function Field({
       <Label className="mb-1 block text-sm">{label}</Label>
       {children}
       {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
+    </div>
+  );
+}
+
+function PaidPanel({ kind, code, paymentId }: { kind: Kind; code: string; paymentId: string }) {
+  const waUrl = waLink(
+    `¡Hola! Pagué mi ${kind === "service" ? "pedido de servicios" : "pedido de productos"} ${code} (pago Mercado Pago ${paymentId}). Quería coordinar la entrega.`,
+  );
+  return (
+    <div className="rounded-lg border bg-card p-6 text-center">
+      <CheckCircle2 className="mx-auto h-12 w-12 text-green-600" />
+      <h2 className="mt-3 text-xl font-semibold">¡Pago aprobado!</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Tu pago se acreditó correctamente. Te enviamos el comprobante por email.
+      </p>
+      <div className="mx-auto mt-4 max-w-xs space-y-1 rounded-md border bg-muted/30 p-4 text-sm">
+        <div className="flex justify-between gap-4">
+          <span className="text-muted-foreground">Pedido</span>
+          <span className="font-semibold tracking-wider">{code}</span>
+        </div>
+        <div className="flex justify-between gap-4">
+          <span className="text-muted-foreground">N.º de pago</span>
+          <span className="font-medium">{paymentId}</span>
+        </div>
+        <div className="flex justify-between gap-4">
+          <span className="text-muted-foreground">Estado</span>
+          <span className="font-semibold text-green-600">Aprobado</span>
+        </div>
+      </div>
+      <div className="mt-5 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
+        <a
+          href={waUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center gap-2 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+        >
+          <MessageCircle className="h-4 w-4" /> Coordinar entrega por WhatsApp
+        </a>
+        <Button asChild variant="outline">
+          <Link to="/">Volver al inicio</Link>
+        </Button>
+      </div>
     </div>
   );
 }
