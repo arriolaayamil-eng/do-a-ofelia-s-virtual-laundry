@@ -4,9 +4,9 @@
 // hace que TODOS los slots vuelvan al placeholder punteado original.
 //
 // Fuente de los crops: prototipo Adobe XD del branding original (Marcos, 2019),
-// recortados en src/assets/brand/. Los servicios (#2–#7) y la foto histórica real
-// (#13) todavía no tienen foto propia: quedan como placeholder hasta recibir los
-// assets definitivos de Marcos / sesión de fotos.
+// recortados en src/assets/brand/. Todos los servicios (#2–#7) usan fotos de stock
+// libres (Unsplash, uso comercial gratuito) hasta tener sesión propia; solo la foto
+// histórica real (#13) sigue como placeholder hasta recibir el asset de Marcos.
 
 import hero from "@/assets/brand/hero.png";
 import historia from "@/assets/brand/historia.png";
@@ -15,10 +15,22 @@ import perfumina from "@/assets/brand/prod-perfumina.png";
 import lavandina from "@/assets/brand/prod-lavandina.png";
 import liquido from "@/assets/brand/prod-liquido.png";
 import suavizante from "@/assets/brand/prod-suavizante.png";
+import srvValet from "@/assets/brand/srv-valet.jpg";
+import srvAcolchado from "@/assets/brand/srv-acolchado.jpg";
+import srvMantel from "@/assets/brand/srv-mantel.jpg";
+import srvPluma from "@/assets/brand/srv-pluma.jpg";
+import srvAlmohadas from "@/assets/brand/srv-almohadas.jpg";
+import srvCortinas from "@/assets/brand/srv-cortinas.jpg";
 
 // Clave = el "#N" inicial de la referencia (refId / imgRef).
 const imgMap: Record<string, string> = {
   "#1": hero, // Hero del lavadero (splash de marca)
+  "#2": srvValet, // Servicio de valet (ropa doblada) — stock Unsplash
+  "#3": srvAcolchado, // Acolchado con relleno de guata — stock Unsplash
+  "#4": srvPluma, // Acolchado de pluma — stock Unsplash
+  "#5": srvAlmohadas, // Almohadas apiladas — stock Unsplash
+  "#6": srvMantel, // Mantel planchado — stock Unsplash
+  "#7": srvCortinas, // Cortinas colgadas — stock Unsplash
   "#8": quitamanchas,
   "#9": perfumina,
   "#10": lavandina,

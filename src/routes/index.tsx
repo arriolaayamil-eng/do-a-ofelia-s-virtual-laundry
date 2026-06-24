@@ -1,13 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { listServices } from "@/lib/api/services";
-import { listProducts } from "@/lib/api/products";
 import { ServiceCard } from "@/components/ServiceCard";
-import { ProductCard } from "@/components/ProductCard";
-import { ImgSlot } from "@/components/ImgSlot";
+import { Testimonials } from "@/components/Testimonials";
 import { Button } from "@/components/ui/button";
-import { business } from "@/lib/business";
-import { MapPin, Clock, Truck, WashingMachine, PackageCheck, ClipboardList } from "lucide-react";
+import { business, waLink } from "@/lib/business";
+import { MapPin, Clock, Truck, WashingMachine, PackageCheck, ClipboardList, Star, ShieldCheck, Gift } from "lucide-react";
+import heroBg from "@/assets/brand/hero-bg.png";
 
 const TITLE = "Lavadero Doña Ofelia — Lavandería en Ostende, Pinamar";
 const DESC = "Lavandería familiar en Ostende, Pinamar. Servicio de valet, acolchados, almohadas, manteles, cortinas y productos de limpieza en bidón de 5 L.";
@@ -50,32 +49,22 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   const servicesQ = useQuery({ queryKey: ["services"], queryFn: listServices });
-  const productsQ = useQuery({ queryKey: ["products"], queryFn: listProducts });
 
   const featuredServices = (servicesQ.data ?? []).filter((s) => s.featured);
-  const featuredProducts = (productsQ.data ?? []).filter((p) => p.featured);
 
   return (
     <div>
-      {/* Hero a sangre completa con imagen de fondo.
-          PLACEHOLDER: gradiente de marca. Para usar la foto definitiva:
-          1) guardar la imagen en src/assets/brand/ (ej. hero-bg.jpg)
-          2) importarla arriba:  import heroBg from "@/assets/brand/hero-bg.jpg"
-          3) en el div de fondo, reemplazar el `background` del style por
-             `backgroundImage: \`url(\${heroBg})\``  (ya tiene bg-cover bg-center). */}
+      {/* Hero a sangre completa con la foto definitiva de marca. */}
       <section className="relative isolate flex min-h-[88vh] items-center overflow-hidden">
         <div
           aria-hidden
           className="absolute inset-0 -z-20 bg-cover bg-center"
-          style={{
-            background:
-              "radial-gradient(120% 120% at 72% 8%, #2a5bc0 0%, #0A2C7A 52%, #071F57 100%)",
-          }}
+          style={{ backgroundImage: `url(${heroBg})` }}
         />
-        {/* Velo para legibilidad del texto blanco */}
+        {/* Capa oscura leve para legibilidad del texto blanco */}
         <div
           aria-hidden
-          className="absolute inset-0 -z-10 bg-gradient-to-t from-black/55 via-black/20 to-black/35"
+          className="absolute inset-0 -z-10 bg-gradient-to-r from-black/55 via-black/35 to-black/25"
         />
 
         <div className="mx-auto w-full max-w-6xl px-4 pb-20 pt-28 text-white md:pb-28 md:pt-32">
@@ -99,6 +88,45 @@ function Home() {
               Comprar productos
             </Link>
           </div>
+
+          {/* Banda de confianza */}
+          <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm font-medium text-white/90">
+            <li className="inline-flex items-center gap-2">
+              <Star className="h-4 w-4 fill-amber-400 text-amber-400" /> 4.1 ★ en Google
+            </li>
+            <li className="inline-flex items-center gap-2">
+              <Truck className="h-4 w-4" /> Envío gratis
+            </li>
+            <li className="inline-flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4" /> Pago seguro
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      {/* Banda de sorteos */}
+      <section
+        className="text-white"
+        style={{ background: "linear-gradient(90deg, #29ABE2 0%, #0A2C7A 100%)" }}
+      >
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-6 text-center sm:flex-row sm:text-left">
+          <div className="flex items-center gap-3">
+            <Gift className="h-8 w-8 shrink-0" />
+            <div>
+              <p className="text-lg font-bold leading-tight">¡Participá de nuestros sorteos!</p>
+              <p className="text-sm text-white/85">
+                Todos los meses sorteamos servicios y productos entre nuestros clientes.
+              </p>
+            </div>
+          </div>
+          <a
+            href={waLink("¡Hola! Quiero participar de los sorteos de Lavadero Doña Ofelia.")}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex shrink-0 items-center justify-center rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-primary shadow transition hover:bg-white/90"
+          >
+            Quiero participar
+          </a>
         </div>
       </section>
 
@@ -110,48 +138,22 @@ function Home() {
         </div>
       </section>
 
-      {/* Productos destacados */}
-      <section className="bg-muted/30 py-12">
-        <div className="mx-auto max-w-6xl px-4">
-          <SectionHeader title="Productos destacados" link={{ to: "/productos", label: "Ver todos" }} />
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {featuredProducts.map((p) => <ProductCard key={p.slug} product={p} />)}
-          </div>
-        </div>
-      </section>
-
-      {/* Historia (extracto) */}
-      <section className="mx-auto grid max-w-6xl gap-8 px-4 py-12 md:grid-cols-2 md:items-center">
-        <ImgSlot refId="#13 — Foto de Ofelia Acevedo / familia / negocio antiguo" alt="Ofelia Acevedo, fundadora" />
-        <div>
-          <h2 className="text-2xl font-bold">Nuestra historia</h2>
-          <p className="mt-3 text-sm text-muted-foreground">
-            Un negocio familiar fundado por Ofelia Acevedo en Malabrigo, Santa Fe, en los años 50. Madre de 8 hijos, empezó lavando y planchando con un fuentón de chapa, una tabla de lavar a mano y una plancha a carbón.
-          </p>
-          <div className="mt-5">
-            <Button asChild variant="outline"><Link to="/historia">Leer la historia completa</Link></Button>
-          </div>
-        </div>
-      </section>
-
       {/* Cómo trabajamos */}
-      <section className="bg-muted/30 py-12">
-        <div className="mx-auto max-w-6xl px-4">
-          <h2 className="text-2xl font-bold">Cómo trabajamos</h2>
-          <ol className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Step n={1} icon={<ClipboardList className="h-5 w-5" />} title="Pedís online" desc="Armás tu pedido o consulta desde la web." />
-            <Step n={2} icon={<Truck className="h-5 w-5" />} title="Retiramos o traés" desc="Coordinamos retiro a domicilio o lo dejás en el local." />
-            <Step n={3} icon={<WashingMachine className="h-5 w-5" />} title="Lavamos" desc="Tratamos cada prenda según su tipo de tela." />
-            <Step n={4} icon={<PackageCheck className="h-5 w-5" />} title="Entregamos" desc="Te devolvemos todo limpio, seco y listo." />
-          </ol>
-        </div>
+      <section className="mx-auto max-w-6xl px-4 py-12">
+        <h2 className="text-2xl font-bold">Cómo trabajamos</h2>
+        <ol className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Step n={1} icon={<ClipboardList className="h-5 w-5" />} title="Pedís online" desc="Armás tu pedido o consulta desde la web." />
+          <Step n={2} icon={<Truck className="h-5 w-5" />} title="Retiramos o traés" desc="Coordinamos retiro a domicilio o lo dejás en el local." />
+          <Step n={3} icon={<WashingMachine className="h-5 w-5" />} title="Lavamos" desc="Tratamos cada prenda según su tipo de tela." />
+          <Step n={4} icon={<PackageCheck className="h-5 w-5" />} title="Entregamos" desc="Te devolvemos todo limpio, seco y listo." />
+        </ol>
       </section>
 
-      {/* Ubicación */}
+      {/* Ubicación — mapa con más protagonismo (más ancho, mismo alto) */}
       <section className="mx-auto max-w-6xl px-4 py-12">
         <h2 className="text-2xl font-bold">Dónde estamos</h2>
-        <div className="mt-6 grid gap-6 md:grid-cols-2">
-          <div className="overflow-hidden rounded-lg border">
+        <div className="mt-6 grid gap-6 md:grid-cols-3">
+          <div className="overflow-hidden rounded-lg border md:col-span-2">
             <iframe
               title="Mapa de Lavadero Doña Ofelia"
               src={business.mapsEmbed}
@@ -168,6 +170,9 @@ function Home() {
           </div>
         </div>
       </section>
+
+      {/* Testimonios (Google Maps) */}
+      <Testimonials />
     </div>
   );
 }

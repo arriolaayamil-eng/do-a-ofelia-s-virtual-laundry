@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -11,6 +11,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Trash2, Minus, Plus, MessageCircle, CheckCircle2 } from "lucide-react";
 import { cart, useCart, type CartItem } from "@/lib/cart-store";
 import { business, nextCode, waLink } from "@/lib/business";
+import { MercadoPagoWallet } from "@/components/MercadoPagoWallet";
+import { createOrderPreference, type OrderPreference } from "@/lib/api/orders";
 
 type Kind = "service" | "product";
 
@@ -38,6 +40,9 @@ export function Checkout({ kind }: { kind: Kind }) {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [mode, setMode] = useState<Mode>(kind === "service" ? "retiro-entrega" : "retiro");
   const [success, setSuccess] = useState<{ code: string; waUrl: string } | null>(null);
+  const [contact, setContact] = useState<ContactValues | null>(null);
+  const [pref, setPref] = useState<OrderPreference | null>(null);
+  const [prefLoading, setPrefLoading] = useState(false);
 
   const requiresAddress =
     (kind === "service" && mode === "retiro-entrega") ||
@@ -85,14 +90,47 @@ export function Checkout({ kind }: { kind: Kind }) {
     );
   }
 
-  function onSubmit(values: ContactValues) {
+  // Paso 3 (Contacto) -> guarda datos y avanza al paso 4 (Pago).
+  function goToPayment(values: ContactValues) {
+    setContact(values);
+    setStep(4);
+  }
+
+  // En el paso 4 intentamos crear la orden + preferencia de MP en el backend.
+  // Sin backend (VITE_API_BASE_URL vacío) devuelve null y el Wallet muestra su placeholder.
+  useEffect(() => {
+    if (step !== 4 || !contact) return;
+    let active = true;
+    setPrefLoading(true);
+    createOrderPreference({
+      kind,
+      mode,
+      items: cart.get(kind).map((i) => ({ slug: i.slug, quantity: i.quantity })),
+      contact: {
+        name: contact.name,
+        phone: contact.phone,
+        email: contact.email,
+        address: contact.address || undefined,
+        notes: contact.notes || undefined,
+      },
+    })
+      .then((p) => active && setPref(p))
+      .finally(() => active && setPrefLoading(false));
+    return () => {
+      active = false;
+    };
+  }, [step, contact, kind, mode]);
+
+  // Alternativa / fallback: confirmar y coordinar por WhatsApp (sin pago online).
+  function confirmViaWhatsApp() {
+    const values = contact ?? form.getValues();
     const code = nextCode(kind === "service" ? "SRV" : "PRD");
     const lines = [
       `*${business.name} — Nuevo ${kind === "service" ? "pedido de servicios" : "pedido de productos"}*`,
       `Código: ${code}`,
       "",
       "*Items:*",
-      ...items.map(
+      ...cart.get(kind).map(
         (i) => `• ${i.name} x${i.quantity}${i.unit ? ` (${i.unit})` : ""} — ${i.price}${i.notes ? ` — Nota: ${i.notes}` : ""}`,
       ),
       "",
@@ -130,7 +168,7 @@ export function Checkout({ kind }: { kind: Kind }) {
       )}
 
       {step === 3 && (
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 rounded-lg border bg-card p-5">
+        <form onSubmit={form.handleSubmit(goToPayment)} className="space-y-4 rounded-lg border bg-card p-5">
           <h2 className="text-lg font-semibold">Datos de contacto</h2>
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Nombre y apellido" error={form.formState.errors.name?.message}>
@@ -159,9 +197,45 @@ export function Checkout({ kind }: { kind: Kind }) {
           </div>
           <div className="flex justify-between">
             <Button type="button" variant="outline" onClick={() => setStep(2)}>Volver</Button>
-            <Button type="submit">Confirmar pedido</Button>
+            <Button type="submit">Continuar al pago</Button>
           </div>
         </form>
+      )}
+
+      {step === 4 && (
+        <div className="space-y-4 rounded-lg border bg-card p-5">
+          <h2 className="text-lg font-semibold">Pago</h2>
+
+          <ul className="divide-y rounded-md border text-sm">
+            {cart.get(kind).map((i) => (
+              <li key={i.slug} className="flex items-center justify-between gap-2 px-3 py-2">
+                <span>{i.name} <span className="text-muted-foreground">x{i.quantity}</span></span>
+                <span className="text-muted-foreground">{i.price}</span>
+              </li>
+            ))}
+          </ul>
+
+          <div>
+            <h3 className="mb-2 text-sm font-medium">Pagar online</h3>
+            <MercadoPagoWallet preferenceId={pref?.preferenceId ?? null} loading={prefLoading} />
+          </div>
+
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="h-px flex-1 bg-border" /> o <span className="h-px flex-1 bg-border" />
+          </div>
+
+          <button
+            type="button"
+            onClick={confirmViaWhatsApp}
+            className="flex w-full items-center justify-center gap-2 rounded-md bg-green-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-700"
+          >
+            <MessageCircle className="h-4 w-4" /> Coordinar y pagar por WhatsApp
+          </button>
+
+          <div className="flex justify-start">
+            <Button type="button" variant="outline" onClick={() => setStep(3)}>Volver</Button>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -177,11 +251,11 @@ function modeLabel(kind: Kind, mode: Mode) {
 }
 
 function Stepper({ step }: { step: 1 | 2 | 3 | 4 }) {
-  const labels = ["Items", "Modalidad", "Contacto"];
+  const labels = ["Items", "Modalidad", "Contacto", "Pago"];
   return (
     <ol className="flex flex-wrap items-center gap-2 text-sm">
       {labels.map((l, i) => {
-        const n = (i + 1) as 1 | 2 | 3;
+        const n = (i + 1) as 1 | 2 | 3 | 4;
         const active = step === n;
         const done = step > n;
         return (

@@ -135,7 +135,8 @@ function RootComponent() {
         <Footer />
         <WhatsAppFab />
       </div>
-      <Toaster richColors position="top-right" />
+      {/* offset empuja el toast por debajo del header fijo (h-16=64px) para no tapar el carrito */}
+      <Toaster richColors position="top-right" offset={80} />
     </QueryClientProvider>
   );
 }

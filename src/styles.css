@@ -154,3 +154,24 @@
     letter-spacing: -0.01em;
   }
 }
+
+/* Marquee infinito para la banda de testimonios.
+   El track contiene la lista duplicada; -50% reinicia sin salto. */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 40s linear infinite;
+}
+
+.marquee-pause:hover .animate-marquee {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee {
+    animation: none;
+  }
+}
